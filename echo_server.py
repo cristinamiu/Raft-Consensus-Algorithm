@@ -1,4 +1,6 @@
+from http import client
 import socket 
+import threading
 from storage import Storage
 
 def run_server():
@@ -14,15 +16,19 @@ def run_server():
     sock.listen(1)
 
     while True:
-        print("________________________________________________________________")
-
+        print("________________________________________________________")
         print('[*] Waiting for a connection')
-        # connection, client_address = sock.accept()
+
+        connection, client_address = sock.accept()
+        print(f"[*] Connection from {client_address}")
+
+        threading.Thread(target=handle_client, args=(connection, storage, client_address)).start()
+        
+def handle_client(connection, storage, client_address):
+    while True:
+        print('[**] Connected to client')
 
         try:
-            connection, client_address = sock.accept()
-            print(f"[*] Connection from {client_address}")
-
             while True:
                 operation = connection.recv(1024)
 
@@ -43,7 +49,7 @@ def run_server():
         except Exception:
             print(f"[*] Connection forcibly closed by {client_address}")
             connection.close()
-            continue
+            break
         finally:
             connection.close()
 
