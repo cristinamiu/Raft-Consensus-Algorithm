@@ -1,4 +1,3 @@
-from http import client
 import socket 
 import threading
 from storage import Storage
@@ -33,25 +32,28 @@ def handle_client(connection, storage, client_address):
                 operation = connection.recv(1024)
 
                 if operation:
-                    string_operation = operation.decode("utf-8")
-                    print(f"[*] Received {string_operation}")
-
-                    log_to_file(string_operation)
-
-                    response = storage.execute(string_operation)
-                    connection.sendall(response.encode('utf-8'))
-                elif operation == "\n":
-                    print(f"[*] No more data from {client_address}")
-                    break
+                    handle_operation(connection, storage, operation)
                 else:
                     print(f"[*] No more data from {client_address}")
                     break
+
         except Exception:
             print(f"[*] Connection forcibly closed by {client_address}")
             connection.close()
             break
+        
         finally:
             connection.close()
+
+def handle_operation(connection, storage, operation):
+    string_operation = operation.decode("utf-8")
+    print(f"[*] Received {string_operation}")
+
+    log_to_file(string_operation)
+
+    response = storage.execute(string_operation)
+                    
+    connection.sendall(response.encode('utf-8'))
 
 def log_to_file(string_operation):
     f = open("storage.txt", "a")
