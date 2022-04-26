@@ -6,6 +6,7 @@ class Storage:
     def __init__(self):
         self.data = {}
         self.valid_operations = {"show" : 1, "get" : 2, "set": 3, "delete" : 2}
+        self.log = []
 
     def get(self, key):
         try:
@@ -29,6 +30,7 @@ class Storage:
         if not valid_command:
             return "Invalid command"
         else:
+            self.log.append(command)
             response = self.handle_operation(command)
 
         return response
