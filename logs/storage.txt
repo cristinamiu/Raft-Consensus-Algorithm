@@ -1,2 +1,8 @@
 set ana 5
 show
+set b 8
+
+get b
+show
+get ana
+get b

@@ -69,6 +69,10 @@ class Storage:
             self.execute(cmd)
 
     def log_to_file(self, command):
+        valid = self.validate_command(command)
+        if not valid:
+            return
+
         f = open("logs/storage.txt", "a")
         f.write(command + '\n')
         f.close()
