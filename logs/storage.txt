@@ -6,3 +6,6 @@ get b
 show
 get ana
 get b
+show
+delete b
+show

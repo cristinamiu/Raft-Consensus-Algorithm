@@ -1,4 +1,4 @@
 import sys
 from server import Server
 
-Server(name="Server 1", port=int(sys.argv[1])).run_server() 
+Server(name=str(sys.argv[1]), port=int(sys.argv[2])).run_server() 

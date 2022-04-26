@@ -1,3 +1,4 @@
+from socket import *
 import socket
 import threading
 from server_nodes import server_nodes
@@ -13,12 +14,16 @@ class Server:
         print ("[*] Recovering storage...") 
         self.storage.recover()
 
-        server_address = ('localhost', 1000)
+        server_address = ('localhost', self.port)
+
+        f = open("logs/server_registry.txt", "a")
+        f.write(self.name + " localhost " + str(self.port) + '\n')
+        f.close()
+
         print (f"[*] Starting server on {server_address}") 
-        server_nodes[self.name] = server_address
 
         sock = socket.socket()
-        # sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         sock.bind(server_address)
         sock.listen(1)
 
