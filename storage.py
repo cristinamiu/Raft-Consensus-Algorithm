@@ -5,9 +5,7 @@ class Storage:
 
     def __init__(self):
         self.data = {}
-        self.op = 0
-        self.k = 1
-        self.v = 2
+        self.valid_operations = {"show" : 1, "get" : 2, "set": 3, "delete" : 2}
 
     def get(self, key):
         try:
@@ -24,23 +22,36 @@ class Storage:
         except KeyError:
             return "Entry not found to delete"
 
-    def handle_operation(self, command, maxsplit):
-        if maxsplit == 0:
-            operation = command.split(" ", maxsplit)
-            operation = " ".join(operation)
+    def execute(self, command):
+        response = ""
+        valid_command = self.validate_command(command)
+
+        if not valid_command:
+            return "Invalid command"
         else:
-            [operation, key, *value] = command.split(" ", maxsplit)
-            value = " ".join(value)
+            response = self.handle_operation(command)
+
+        return response
+
+    def handle_operation(self, command):
+        operands = command.split(" ", 2)
+        operation = operands[0]
 
         with self.client_lock:
             if (operation == "get"):
+                key = operands[1]
                 response = ">> GET response: \n" + self.get(key)
+
             elif (operation == "set"):
+                key, value = operands[1:3]
                 self.set(key, value)
                 response = ">> SET response: \n" + key + " set to " + value
+
             elif (operation == "delete"):
+                key = operands[1]
                 self.delete(key)
                 response = ">> DELETE response: \n" + key + " has been deleted "
+
             elif (operation == "show"):
                 response = ">> SHOW response: \n" + "\n".join("{!r}: {!r}".format(k, v) for k, v in self.data.items()) 
     
@@ -49,33 +60,31 @@ class Storage:
 
         return response
 
-    def execute(self, command):
-        response = ""
-        maxsplit = command.count(" ")
+    def recover(self):
+        f = open("logs/storage.txt", "r")
+        logs = f.read()
+        f.close()
 
-        if maxsplit == 0:
-            operation = command.split(" ", maxsplit)
-            operation = " ".join(operation)
+        for cmd in logs.split("\n"):
+            self.execute(cmd)
+
+    def log_to_file(self, command):
+        f = open("logs/storage.txt", "a")
+        f.write(command + '\n')
+        f.close()
+
+    def validate_command(self, command):
+        isValid = True
+        operation = command.split(" ", 2)[0]
+        args_number = len(command.split(" ", 2))
+
+        if command:
+            isValid = (operation in self.valid_operations) and (self.valid_operations[operation] == args_number)
         else:
-            [operation, key, *value] = command.split(" ", maxsplit)
-            value = " ".join(value)
+            isValid = False
 
-        with self.client_lock:
-            if (operation == "get"):
-                response = ">> GET response: \n" + self.get(key)
-            elif (operation == "set"):
-                self.set(key, value)
-                response = ">> SET response: \n" + key + " set to " + value
-            elif (operation == "delete"):
-                self.delete(key)
-                response = ">> DELETE response: \n" + key + " has been deleted "
-            elif (operation == "show"):
-                response = ">> SHOW response: \n" + "\n".join("{!r}: {!r}".format(k, v) for k, v in self.data.items()) 
-    
-            else:
-                response = ">> Command not recognized"
-
-        return response 
+        return isValid
+        
 
 
 
