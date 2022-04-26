@@ -1,7 +1,7 @@
 from socket import *
 import socket
 import threading
-from server_nodes import server_nodes
+from server_nodes import get_nodes_in_network
 from storage import Storage
 
 class Server:
@@ -21,6 +21,8 @@ class Server:
         f.close()
 
         print (f"[*] Starting server on {server_address}") 
+
+        print(get_nodes_in_network())
 
         sock = socket.socket()
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
