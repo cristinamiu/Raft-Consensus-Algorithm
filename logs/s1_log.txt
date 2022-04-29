@@ -1,0 +1,7 @@
+0 1 set ana 4
+1 2 set b 30
+2 0 get sna
+3 0 get ana
+4 0 set s 6
+5 0 delete r
+6 0 delete b
