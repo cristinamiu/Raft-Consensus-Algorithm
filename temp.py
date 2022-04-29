@@ -1,7 +1,5 @@
 from socket import *
 import socket
-from timer import Timer
-import time
 import threading
 
 class Server:
@@ -11,6 +9,8 @@ class Server:
         self.address = ("localhost", port)
         self.electionCountdown = threading.Timer(10, self.becomeCandidate)
         self.electionCountdown.start()
+        
+
 
     def start(self):
         print(f"[*] Starting server on {self.address}")
@@ -29,6 +29,9 @@ class Server:
     def becomeCandidate(self):
         self.currentState = "Candidate"
         print(f"[*] Current state: {self.currentState}")
+        # candidateCountdown = threading.Timer(3, self.becomeCandidate)
+        # candidateCountdown.start()
+
 
 server = Server(10000, "Follower")
 server.start()
