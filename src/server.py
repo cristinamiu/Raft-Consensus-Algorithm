@@ -80,7 +80,7 @@ class Server:
             if string_operation == "Count on me":
                 self.voteFromPeers[address] = True
 
-                if (self.getNumberOfVotes() ) >= math.ceil(self.getNumberOfPeers()):
+                if (self.getNumberOfVotes() ) >= math.ceil(self.getNumberOfPeers()/2):
                     self.electionCountdown.cancel()
                     self.isLeader = True
                     print("[*] Forever Leader")
@@ -129,14 +129,21 @@ class Server:
             peerSocket.close()
 
     def startElection(self):
-        print("[*] Starting election...")
-        self.voteFromPeers[self.name] = True
-        self.alreadyVoted = True
+        if not self.isLeader:
+            print("[*] Starting election...")
+            self.voteFromPeers[self.name] = True
+            self.alreadyVoted = True
 
-        message = "Can I count on your vote this term?"
+            message = "Can I count on your vote this term?"
 
-        for name, port in self.clusterPeers.items():
-            self.send(int(port), message) 
+            for name, port in self.clusterPeers.items():
+                self.send(int(port), message) 
+
+            self.electionCountdown.cancel()
+            self.electionCountdown = threading.Timer(2, self.startElection)
+            self.electionCountdown.start()
+        elif self.isLeader:
+            self.electionCountdown.cancel()
 
     def getPortOfServer(self, sname):
         response = 0
