@@ -1,6 +1,7 @@
 import socket
 import sys
 import threading
+import time
 from log_manager import LogManager
 
 class Server:
@@ -12,6 +13,28 @@ class Server:
         self.currentTerm = 0
         self.isLeader = False
 
+    def send(self, port, message):
+        message = self.name + "@" + message
+        toAddress = ('localhost', port)
+
+        peerSocket  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            peerSocket.connect(toAddress)
+            encodedMessage = message.encode('utf-8')
+
+            try:
+                print("Sending message")
+                peerSocket.sendall(encodedMessage)
+                time.sleep(0.5)
+                peerSocket.close()
+            except Exception as e:
+                print("Failed to send message" + str(e))
+        except Exception as e:
+            print("Failed to send message - Connection failed" + str(e))
+        finally:
+            peerSocket.close()
+
     def runServer(self):
         print("[*] Recovering logs...")
         self.logManager.recoverLogs()
@@ -19,9 +42,12 @@ class Server:
         print(f"[*] Server started on {self.serverAddress}")
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(self.serverAddress)
-        self.sock.listen(10)
+        self.sock.listen(6000)
+
+        if (self.name == "s1"):
+            self.send(10001, "Hello, world!")
 
         while True:
             print("________________________________________________________")
@@ -40,10 +66,10 @@ class Server:
                     if request:
                         self.handleRequest(connection, request)
                     else:
-                        print(f"[*] No more data from {client_address}")
+                        # print(f"[*] No more data from {client_address}")
                         break       
             except Exception as e:
-                print(f"[*] Connection forcibly closed by {client_address}" + str(e))
+                print(f"[*] Connection closed by {client_address}" + str(e))
                 connection.close()
                 break       
             finally:
@@ -56,6 +82,10 @@ class Server:
         if address == "client":
             response = self.handleLogOperation(connection, string_operation) 
             connection.sendall(response.encode('utf-8'))
+
+        else:
+            if string_operation == "Hello, world!": 
+                self.send(10000, "Hello, world back!")
 
 
     def handleLogOperation(self, connection, string_operation):
