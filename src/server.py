@@ -1,8 +1,10 @@
+import math
 import socket
 import sys
 import threading
 import time
 from log_manager import LogManager
+from cluster_manager import getClusterPeers, initVoteFromPeers
 
 class Server:
     def __init__(self, name, port):
@@ -12,28 +14,13 @@ class Server:
         self.serverAddress = ("localhost", port)
         self.currentTerm = 0
         self.isLeader = False
+        self.alreadyVoted = False
 
-    def send(self, port, message):
-        message = self.name + "@" + message
-        toAddress = ('localhost', port)
+        self.clusterPeers = getClusterPeers(name)
+        self.voteFromPeers = initVoteFromPeers()
 
-        peerSocket  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        try:
-            peerSocket.connect(toAddress)
-            encodedMessage = message.encode('utf-8')
-
-            try:
-                print("Sending message")
-                peerSocket.sendall(encodedMessage)
-                time.sleep(0.5)
-                peerSocket.close()
-            except Exception as e:
-                print("Failed to send message" + str(e))
-        except Exception as e:
-            print("Failed to send message - Connection failed" + str(e))
-        finally:
-            peerSocket.close()
+        self.electionCountdown = threading.Timer(10, self.startElection)
+        self.electionCountdown.start()
 
     def runServer(self):
         print("[*] Recovering logs...")
@@ -41,13 +28,11 @@ class Server:
 
         print(f"[*] Server started on {self.serverAddress}")
 
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(self.serverAddress)
         self.sock.listen(6000)
-
-        if (self.name == "s1"):
-            self.send(10001, "Hello, world!")
 
         while True:
             print("________________________________________________________")
@@ -82,11 +67,26 @@ class Server:
         if address == "client":
             response = self.handleLogOperation(connection, string_operation) 
             connection.sendall(response.encode('utf-8'))
-
         else:
-            if string_operation == "Hello, world!": 
-                self.send(10000, "Hello, world back!")
+            if string_operation == "Can I count on your vote this term?":
+                if not self.alreadyVoted:
+                    response = "Count on me"
+                    port = self.getPortOfServer(address)
+                    self.send(port, response)
+                    self.alreadyVoted = True
+                    self.electionCountdown.cancel()
+                    print("[*] Forever Follower")
 
+            if string_operation == "Count on me":
+                self.voteFromPeers[address] = True
+
+                if (self.getNumberOfVotes() ) >= math.ceil(self.getNumberOfPeers()):
+                    self.electionCountdown.cancel()
+                    self.isLeader = True
+                    print("[*] Forever Leader")
+
+                print(f"[*] Votes: {self.getNumberOfVotes()} -  Nodes: {self.getNumberOfPeers()}")
+                
 
     def handleLogOperation(self, connection, string_operation):
         if self.isLeader:
@@ -105,6 +105,51 @@ class Server:
         if (validCommand):
             self.logManager.logCommandToFile(self.logManager.last_index, self.currentTerm, string_operation)   
             self.logManager.updateLogs(self.logManager.last_index, self.currentTerm, string_operation)
+
+    def send(self, port, msg):
+        message = self.name + "@" + msg
+        toAddress = ('localhost', port)
+
+        peerSocket  = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            peerSocket.connect(toAddress)
+            encodedMessage = message.encode('utf-8')
+
+            try:
+                print("Sending message")
+                peerSocket.sendall(encodedMessage)
+                time.sleep(0.5)
+                peerSocket.close()
+            except Exception as e:
+                print("Failed to send message" + str(e))
+        except Exception as e:
+            print("Failed to send message - Connection failed" + str(e))
+        finally:
+            peerSocket.close()
+
+    def startElection(self):
+        print("[*] Starting election...")
+        self.voteFromPeers[self.name] = True
+        self.alreadyVoted = True
+
+        message = "Can I count on your vote this term?"
+
+        for name, port in self.clusterPeers.items():
+            self.send(int(port), message) 
+
+    def getPortOfServer(self, sname):
+        response = 0
+        for name, port in self.clusterPeers.items():
+            if name == sname:
+                response = port
+        return int(response)
+
+    def getNumberOfVotes(self):
+        return len(list(filter(lambda x: x is True, self.voteFromPeers.values())))
+
+    def getNumberOfPeers(self):
+        return len(self.clusterPeers) + 1
 
 
 Server(name=sys.argv[1], port=int(sys.argv[2])).runServer() 
