@@ -19,6 +19,7 @@ class Client:
                 if message:
                     print(f"[*] Sending: {message}")
 
+                    message = "client@" + message
                     sock.sendall(message.encode('utf-8'))
 
                     data = sock.recv(1024).decode('utf-8')
