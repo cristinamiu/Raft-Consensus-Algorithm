@@ -10,6 +10,7 @@ class Server:
         self.logManager = LogManager(self.name)
         self.serverAddress = ("localhost", port)
         self.currentTerm = 0
+        self.isLeader = False
 
     def runServer(self):
         print("[*] Recovering logs...")
@@ -52,14 +53,21 @@ class Server:
         address, string_operation = request.decode("utf-8").split("@")
         print(f"[*] Received from {address} : {string_operation}")
 
-        self.handleLogOperation(connection, string_operation) 
+        if address == "client":
+            response = self.handleLogOperation(connection, string_operation) 
+            connection.sendall(response.encode('utf-8'))
+
 
     def handleLogOperation(self, connection, string_operation):
-        self.logToLocalStorage(string_operation)
+        if self.isLeader:
+            self.logToLocalStorage(string_operation)
 
-        response = self.logManager.execute(self.logManager.last_index, self.currentTerm, string_operation)
+            response = self.logManager.execute(self.logManager.last_index, self.currentTerm, string_operation)
+        else:
+            response = "Sorry, I am not the leader."
 
-        connection.sendall(response.encode('utf-8'))
+        return response 
+
 
     def logToLocalStorage(self, string_operation):
         validCommand = self.logManager.validateCommand(string_operation) and ("show" not in string_operation)
