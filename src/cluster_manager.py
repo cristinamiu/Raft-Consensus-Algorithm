@@ -2,6 +2,16 @@ import os
 path = os.path.join(os.getcwd(), 'logs', r'server-configuration.txt')
 print(path)
 
+def registerNode(sname, sport):
+    serverRegistry = {}
+    serverRegistry = getAllNodes()
+
+    existingEntry = (sname, str(sport) + "\n") in serverRegistry.items()
+    print(serverRegistry.items())
+
+    if not existingEntry:
+        f = open("../logs/server-configuration.txt", "a")
+        f.write(f"{sname} {sport}\n")
 
 def getClusterPeers(sname):
     f = open("C:/Users/crist/Documents/Projects/DA/raft/logs/server-configuration.txt", "r")

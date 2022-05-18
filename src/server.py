@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 from log_manager import LogManager
-from cluster_manager import getClusterPeers, initVoteFromPeers
+from cluster_manager import getClusterPeers, initVoteFromPeers, registerNode
 
 class Server:
     def __init__(self, name, port):
@@ -16,7 +16,6 @@ class Server:
         self.isLeader = False
         self.alreadyVoted = False
 
-        self.clusterPeers = getClusterPeers(name)
         self.voteFromPeers = initVoteFromPeers()
 
         self.electionCountdown = threading.Timer(10, self.startElection)
@@ -25,6 +24,8 @@ class Server:
     def runServer(self):
         print("[*] Recovering logs...")
         self.logManager.recoverLogs()
+
+        registerNode(self.name, self.port)
 
         print(f"[*] Server started on {self.serverAddress}")
 
@@ -136,7 +137,7 @@ class Server:
 
             message = "Can I count on your vote this term?"
 
-            for name, port in self.clusterPeers.items():
+            for name, port in getClusterPeers(self.name).items():
                 self.send(int(port), message) 
 
             self.electionCountdown.cancel()
@@ -147,7 +148,7 @@ class Server:
 
     def getPortOfServer(self, sname):
         response = 0
-        for name, port in self.clusterPeers.items():
+        for name, port in getClusterPeers(self.name).items():
             if name == sname:
                 response = port
         return int(response)
@@ -156,7 +157,7 @@ class Server:
         return len(list(filter(lambda x: x is True, self.voteFromPeers.values())))
 
     def getNumberOfPeers(self):
-        return len(self.clusterPeers) + 1
+        return len(getClusterPeers(self.name)) + 1
 
 
 Server(name=sys.argv[1], port=int(sys.argv[2])).runServer() 
