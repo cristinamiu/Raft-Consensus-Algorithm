@@ -6,6 +6,7 @@ import time
 from log_manager import LogManager
 from cluster_manager import getClusterPeers, initVoteFromPeers, registerNode
 from RequestVote import RequestVote
+from AppendEntries import AppendEntries
 
 class Server:
     def __init__(self, name, port):
@@ -20,12 +21,14 @@ class Server:
         self.currentTerm = self.logManager.last_term
         self.isLeader = False
         self.alreadyVoted = False
-        self.lastVotedInTerm = -1;
+        self.lastVotedInTerm = -1
 
         self.voteFromPeers = initVoteFromPeers()
 
         self.electionCountdown = threading.Timer(10, self.startElection)
         self.electionCountdown.start()
+
+        self.heartbeatTimer = None
 
     def runServer(self):
         
@@ -41,9 +44,6 @@ class Server:
         self.sock.listen(6000)
 
         while True:
-            # print("________________________________________________________")
-            # print('[*] Waiting for a connection')
-
             connection, client_address = self.sock.accept()
             print(f"[*] Connection from {client_address}")
 
@@ -91,6 +91,8 @@ class Server:
                     self.electionCountdown.cancel()
                     self.isLeader = True
                     print("[*] Forever Leader")
+
+                    self.sendHeartbeat()
 
                 print(f"[*] Votes: {self.getNumberOfVotes()} -  Nodes: {self.getNumberOfPeers()}")
                 
@@ -142,17 +144,27 @@ class Server:
             self.currentTerm += 1
             self.lastVotedInTerm = self.currentTerm
 
-            # message = "Can I count on your vote this term?"
             message = RequestVote(self.currentTerm, self.logManager.last_term, self.logManager.last_index).toMessage()
 
-            for name, port in getClusterPeers(self.name).items():
-                self.send(int(port), message) 
+            self.broadcast(message)
 
             self.electionCountdown.cancel()
-            self.electionCountdown = threading.Timer(2, self.startElection)
+            self.electionCountdown = threading.Timer(5, self.startElection)
             self.electionCountdown.start()
         elif self.isLeader:
             self.electionCountdown.cancel()
+
+    def sendHeartbeat(self):
+        print("Sending heartbeat...")
+        if self.isLeader:
+            message = AppendEntries(self.currentTerm, self.logManager.last_index, self.logManager.last_term, []).toMessage()
+            self.broadcast(message)
+        self.heartbeatTimer = threading.Timer(2, self.sendHeartbeat)
+        self.heartbeatTimer.start()
+
+    def broadcast(self, message):
+        for name, port in getClusterPeers(self.name).items():
+            self.send(int(port), message) 
 
     def getPortOfServer(self, sname):
         response = 0
