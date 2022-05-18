@@ -20,6 +20,7 @@ class Server:
         self.currentTerm = self.logManager.last_term
         self.isLeader = False
         self.alreadyVoted = False
+        self.lastVotedInTerm = -1;
 
         self.voteFromPeers = initVoteFromPeers()
 
@@ -74,12 +75,13 @@ class Server:
             connection.sendall(response.encode('utf-8'))
         else:
             if string_operation.split("? ")[0] == "Can I count on your vote":
-                if not self.alreadyVoted:
+                requestVote = RequestVote.fromMessage(string_operation)
+
+                if int(self.lastVotedInTerm) <= int(requestVote.currentTerm):
                     self.electionCountdown.cancel()
                     response = "Count on me"
                     port = self.getPortOfServer(address)
                     self.send(port, response)
-                    self.alreadyVoted = True
                     print("[*] Forever Follower")
 
             if string_operation == "Count on me":
@@ -137,8 +139,8 @@ class Server:
         if not self.isLeader:
             print("[*] Starting election...")
             self.voteFromPeers[self.name] = True
-            self.alreadyVoted = True
             self.currentTerm += 1
+            self.lastVotedInTerm = self.currentTerm
 
             # message = "Can I count on your vote this term?"
             message = RequestVote(self.currentTerm, self.logManager.last_term, self.logManager.last_index).toMessage()
