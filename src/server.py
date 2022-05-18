@@ -73,13 +73,13 @@ class Server:
             response = self.handleLogOperation(connection, string_operation) 
             connection.sendall(response.encode('utf-8'))
         else:
-            if string_operation == "Can I count on your vote this term?":
+            if string_operation.split("? ")[0] == "Can I count on your vote":
                 if not self.alreadyVoted:
+                    self.electionCountdown.cancel()
                     response = "Count on me"
                     port = self.getPortOfServer(address)
                     self.send(port, response)
                     self.alreadyVoted = True
-                    self.electionCountdown.cancel()
                     print("[*] Forever Follower")
 
             if string_operation == "Count on me":
@@ -138,8 +138,10 @@ class Server:
             print("[*] Starting election...")
             self.voteFromPeers[self.name] = True
             self.alreadyVoted = True
+            self.currentTerm += 1
 
-            message = "Can I count on your vote this term?"
+            # message = "Can I count on your vote this term?"
+            message = RequestVote(self.currentTerm, self.logManager.last_term, self.logManager.last_index).toMessage()
 
             for name, port in getClusterPeers(self.name).items():
                 self.send(int(port), message) 

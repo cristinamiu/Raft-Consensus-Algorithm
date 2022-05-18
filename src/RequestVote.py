@@ -5,7 +5,7 @@ class RequestVote:
         self.lastLogIndex = lastLogIndex
 
     def toMessage(self):
-        return "Can I count on your vote? @ " + str(self.currentTerm) + "-" + str(self.lastLogTerm) + "-" + str(self.lastLogIndex)
+        return "Can I count on your vote? " + str(self.currentTerm) + "-" + str(self.lastLogTerm) + "-" + str(self.lastLogIndex)
 
     def fromMessage(self, message):
         msg = message.replace("Can I count on your vote? @ ", "")
