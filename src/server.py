@@ -28,6 +28,8 @@ class Server:
         self.electionCountdown = threading.Timer(10, self.startElection)
         self.electionCountdown.start()
 
+        self.canCandidate = True
+
         self.heartbeatTimer = None
 
     def runServer(self):
@@ -91,10 +93,13 @@ class Server:
                     self.electionCountdown.cancel()
                     self.isLeader = True
                     print("[*] Forever Leader")
-
+                    print(self.voteFromPeers)
                     self.sendHeartbeat()
 
                 print(f"[*] Votes: {self.getNumberOfVotes()} -  Nodes: {self.getNumberOfPeers()}")
+
+            if string_operation.split(" ")[0] == "AppendEntries":
+                self.canCandidate = False
                 
 
     def handleLogOperation(self, connection, string_operation):
@@ -138,7 +143,7 @@ class Server:
             peerSocket.close()
 
     def startElection(self):
-        if not self.isLeader:
+        if not self.isLeader and self.canCandidate:
             print("[*] Starting election...")
             self.voteFromPeers[self.name] = True
             self.currentTerm += 1
