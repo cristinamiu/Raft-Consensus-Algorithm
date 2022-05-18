@@ -36,8 +36,8 @@ class Server:
         self.sock.listen(6000)
 
         while True:
-            print("________________________________________________________")
-            print('[*] Waiting for a connection')
+            # print("________________________________________________________")
+            # print('[*] Waiting for a connection')
 
             connection, client_address = self.sock.accept()
             print(f"[*] Connection from {client_address}")
@@ -55,7 +55,7 @@ class Server:
                         # print(f"[*] No more data from {client_address}")
                         break       
             except Exception as e:
-                print(f"[*] Connection closed by {client_address}" + str(e))
+                # print(f"[*] Connection closed by {client_address}" + str(e))
                 connection.close()
                 break       
             finally:
