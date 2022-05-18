@@ -9,6 +9,7 @@ class LogManager:
         self.valid_operations = {"show" : 1, "get" : 2, "set": 3, "delete" : 2}
         self.server = serverName
         self.fileName = path + serverName + "_log.txt"
+        self.last_term = 0
         self.last_index = -1
         self.logs = {}
     
@@ -40,6 +41,7 @@ class LogManager:
             index, term, command = log.split(" ", 2)
             self.last_index = int(index)
             self.execute(index, term, command)
+            self.last_term = int(term)
             self.updateLogs(index, term, command)
 
     def logCommandToFile(self, index, term, command):

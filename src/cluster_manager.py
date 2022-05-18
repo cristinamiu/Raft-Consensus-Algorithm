@@ -7,7 +7,6 @@ def registerNode(sname, sport):
     serverRegistry = getAllNodes()
 
     existingEntry = (sname, str(sport) + "\n") in serverRegistry.items()
-    print(serverRegistry.items())
 
     if not existingEntry:
         f = open("../logs/server-configuration.txt", "a")

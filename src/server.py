@@ -5,14 +5,19 @@ import threading
 import time
 from log_manager import LogManager
 from cluster_manager import getClusterPeers, initVoteFromPeers, registerNode
+from RequestVote import RequestVote
 
 class Server:
     def __init__(self, name, port):
         self.name = name
         self.port = port
+
         self.logManager = LogManager(self.name)
+        print("[*] Recovering logs...")
+        self.logManager.recoverLogs()
+
         self.serverAddress = ("localhost", port)
-        self.currentTerm = 0
+        self.currentTerm = self.logManager.last_term
         self.isLeader = False
         self.alreadyVoted = False
 
@@ -22,9 +27,8 @@ class Server:
         self.electionCountdown.start()
 
     def runServer(self):
-        print("[*] Recovering logs...")
-        self.logManager.recoverLogs()
-
+        
+        print("[*] Current term: " + str(self.currentTerm))
         registerNode(self.name, self.port)
 
         print(f"[*] Server started on {self.serverAddress}")
