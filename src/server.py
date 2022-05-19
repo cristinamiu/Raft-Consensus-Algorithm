@@ -79,7 +79,7 @@ class Server:
             if string_operation.split("? ")[0] == "Can I count on your vote":
                 requestVote = RequestVote.fromMessage(string_operation)
 
-                if int(self.lastVotedInTerm) <= int(requestVote.currentTerm):
+                if int(self.lastVotedInTerm) < int(requestVote.currentTerm) and (not self.isLeader):
                     self.electionCountdown.cancel()
                     response = "Count on me"
                     port = self.getPortOfServer(address)

@@ -42,7 +42,7 @@ def initVoteFromPeers():
     voteFromPeers = {}
     clusterPeers = getAllNodes()
 
-    for name, port in clusterPeers:
+    for name, port in clusterPeers.items():
         voteFromPeers[name] = False
     
     return voteFromPeers
