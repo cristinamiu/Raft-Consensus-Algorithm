@@ -8,6 +8,7 @@ from cluster_manager import getClusterPeers, initVoteFromPeers, registerNode
 from RequestVote import RequestVote
 from AppendEntries import AppendEntries
 import ast
+import random
 
 class Server:
     def __init__(self, name, port):
@@ -17,6 +18,8 @@ class Server:
         self.logManager = LogManager(self.name)
         print("[*] Recovering logs...")
         self.logManager.recoverLogs()
+
+        self.timeout = float(random.randint(10, 18))
 
         self.serverAddress = ("localhost", port)
         self.currentTerm = self.logManager.last_term
@@ -31,15 +34,21 @@ class Server:
         self.electionCountdown.start()
 
         self.canCandidate = True
+        self.setCandidate = threading.Timer(8, self.startCandidate)
+        self.setCandidate.start()
 
         self.heartbeatTimer = None
+
+    def startCandidate(self):
+        self.canCandidate = True
+        print(f"{self.canCandidate}")
 
     def runServer(self):
         
         print("[*] Current term: " + str(self.currentTerm))
         registerNode(self.name, self.port)
 
-        print(f"[*] Server started on {self.serverAddress}")
+        print(f"[*] Server started on {self.serverAddress} with timeout {self.timeout} seconds")
 
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -103,6 +112,15 @@ class Server:
             if string_operation.split(" ")[0] == "AppendEntries":
                 self.isLeader = False
                 self.canCandidate = False
+
+                self.setCandidate.cancel()
+                self.setCandidate = threading.Timer(8, self.startCandidate)
+                self.setCandidate.start()
+
+                self.electionCountdown.cancel()
+                self.electionCountdown = threading.Timer(self.timeout, self.startElection)
+                self.electionCountdown.start()
+
                 self.lastLeader = address
                 response = "I like application"
                 appendEntries = AppendEntries.fromMessage(string_operation)
@@ -190,6 +208,8 @@ class Server:
             peerSocket.close()
 
     def startElection(self):
+        self.currentTerm = int(self.currentTerm)
+        print(f"Is leader: {self.isLeader} and can candidate: {self.canCandidate}")
         if not self.isLeader and self.canCandidate:
             print("[*] Starting election...")
             self.voteFromPeers[self.name] = True
