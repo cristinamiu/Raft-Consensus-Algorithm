@@ -1,0 +1,6 @@
+0 1 set ana 4
+1 2 set b 30
+2 3 get b
+3 3 set b 5
+4 3 get b
+5 4 get ana
