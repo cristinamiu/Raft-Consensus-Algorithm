@@ -160,8 +160,8 @@ class Server:
         validCommand = self.logManager.validateCommand(string_operation) and ("show" not in string_operation)
 
         if (validCommand):
-            self.logManager.logCommandToFile(self.logManager.last_index, self.currentTerm, string_operation)   
-            self.logManager.updateLogs(self.logManager.last_index, self.currentTerm, string_operation)
+            self.logManager.logCommandToFile(self.logManager.last_index+1, self.currentTerm, string_operation)   
+            self.logManager.updateLogs(self.logManager.last_index+1, self.currentTerm, string_operation)
 
     def logNewEntry(self, index, term, command):
         self.logManager.logCommandToFile(index, term, command)
