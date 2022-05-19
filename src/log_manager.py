@@ -39,7 +39,7 @@ class LogManager:
 
         for log in logs:
             index, term, command = log.split(" ", 2)
-            self.last_index = int(index)
+            # self.last_index = int(index)
             self.execute(index, term, command)
             self.last_term = int(term)
             self.updateLogs(index, term, command)
@@ -47,6 +47,41 @@ class LogManager:
     def logCommandToFile(self, index, term, command):
         f = open(self.fileName, "a")
         f.write(f"{index} {term} {command}\n")
+        f.close()
+
+    def getLastLog(self):
+        f = open(self.fileName, "r")
+        logs = f.readlines()
+        f.close()
+
+        for log in logs:
+            pass
+        lastLog = log
+        return lastLog
+
+    @classmethod
+    def extractFromLog(self, log):
+        print(type(log))
+        index, term, command = log.split(" ", 2)
+        return index, term, command
+
+    def getMissingEntries(self, index):
+        f = open(self.fileName, "r")
+        logs = f.readlines()
+        f.close()
+        entriesToReturn = []
+
+        for log in logs:
+            log = log.strip()
+            dict = {}
+            logIndex, term, command = log.split(" ", 2)
+            if logIndex > index:
+                dict = {"index" : logIndex, "term" : term, "command" : command}
+                entriesToReturn.append(dict)
+        return entriesToReturn
+
+
+
 
     def execute(self, index, term, command):
         response = ""

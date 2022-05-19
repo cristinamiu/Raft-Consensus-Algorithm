@@ -7,6 +7,7 @@ from log_manager import LogManager
 from cluster_manager import getClusterPeers, initVoteFromPeers, registerNode
 from RequestVote import RequestVote
 from AppendEntries import AppendEntries
+import ast
 
 class Server:
     def __init__(self, name, port):
@@ -22,6 +23,7 @@ class Server:
         self.isLeader = False
         self.alreadyVoted = False
         self.lastVotedInTerm = -1
+        self.lastLeader = None
 
         self.voteFromPeers = initVoteFromPeers()
 
@@ -99,8 +101,49 @@ class Server:
                 print(f"[*] Votes: {self.getNumberOfVotes()} -  Nodes: {self.getNumberOfPeers()}")
 
             if string_operation.split(" ")[0] == "AppendEntries":
+                self.isLeader = False
                 self.canCandidate = False
-                
+                self.lastLeader = address
+                response = "I like application"
+                appendEntries = AppendEntries.fromMessage(string_operation)
+                self.currentTerm = appendEntries.currentTerm
+
+                lastLog = self.logManager.getLastLog()
+                print("Last log: ", lastLog)
+
+                lastIndex, lastTerm, lastCommand = LogManager.extractFromLog(lastLog)      
+
+                if lastIndex == appendEntries.previousIndex and lastTerm == appendEntries.previousTerm:
+                    response = "I am up to date"
+                    port = self.getPortOfServer(address)
+                    self.send(port, response)
+
+                elif lastIndex < appendEntries.previousIndex:
+                    if (len(appendEntries.entries) == 0):
+                        response = "GiveEntriesAfterIndex " + lastIndex
+                        print(response)
+                        port = self.getPortOfServer(address)
+                        self.send(port, response)
+                    else:
+                        response = "I am up to date"
+                        print(appendEntries.entries)
+                        for entry in appendEntries.entries:
+                            print(entry["index"])
+                            newEntry = entry["index"] + " " + entry["term"] + " " + entry["command"]
+                            self.logNewEntry(entry["index"], entry["term"], entry["command"])
+                        port = self.getPortOfServer(address)
+                        self.send(port, response)
+
+
+            if string_operation.split(" ")[0] == "GiveEntriesAfterIndex":
+                if self.isLeader:
+                    index = string_operation.split(" ")[1]
+                    entries = self.logManager.getMissingEntries(index)
+                    print(entries)
+                    response = AppendEntries(self.currentTerm, self.logManager.last_index, self.logManager.last_term, entries).toMessage()
+                    port = self.getPortOfServer(address)
+                    self.send(port, response)
+
 
     def handleLogOperation(self, connection, string_operation):
         if self.isLeader:
@@ -119,6 +162,10 @@ class Server:
         if (validCommand):
             self.logManager.logCommandToFile(self.logManager.last_index, self.currentTerm, string_operation)   
             self.logManager.updateLogs(self.logManager.last_index, self.currentTerm, string_operation)
+
+    def logNewEntry(self, index, term, command):
+        self.logManager.logCommandToFile(index, term, command)
+
 
     def send(self, port, msg):
         message = self.name + "@" + msg
