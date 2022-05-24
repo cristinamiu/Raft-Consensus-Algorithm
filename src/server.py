@@ -83,7 +83,7 @@ class Server:
         address, string_operation = request.decode("utf-8").split("@")
         print(f"[*] Received from {address} : {string_operation}")
 
-        if address == "client":
+        if "client" in address:
             response = self.handleLogOperation(connection, string_operation) 
             connection.sendall(response.encode('utf-8'))
         else:
@@ -95,7 +95,7 @@ class Server:
                     response = "Count on me"
                     port = self.getPortOfServer(address)
                     self.send(port, response)
-                    print("[*] Forever Follower")
+                    print("[*] I am Follower")
 
             if string_operation == "Count on me":
                 self.voteFromPeers[address] = True
@@ -103,7 +103,7 @@ class Server:
                 if (self.getNumberOfVotes() ) >= math.ceil(self.getNumberOfPeers()/2):
                     self.electionCountdown.cancel()
                     self.isLeader = True
-                    print("[*] Forever Leader")
+                    print("[*] I am Leader")
                     print(self.voteFromPeers)
                     self.sendHeartbeat()
 
@@ -169,7 +169,7 @@ class Server:
 
             response = self.logManager.execute(self.logManager.last_index, self.currentTerm, string_operation)
         else:
-            response = "Sorry, I am not the leader."
+            response = "Sorry, I am not the leader. Last leader I heard from is: " + self.lastLeader
 
         return response 
 
@@ -209,7 +209,7 @@ class Server:
 
     def startElection(self):
         self.currentTerm = int(self.currentTerm)
-        print(f"Is leader: {self.isLeader} and can candidate: {self.canCandidate}")
+        # print(f"Is leader: {self.isLeader} and can candidate: {self.canCandidate}")
         if not self.isLeader and self.canCandidate:
             print("[*] Starting election...")
             self.voteFromPeers[self.name] = True

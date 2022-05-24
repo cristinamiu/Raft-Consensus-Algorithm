@@ -2,8 +2,9 @@ import socket
 import sys
 
 class Client:
-    def __init__(self, port=1000):
+    def __init__(self, port=1000, id=""):
         self.port = port
+        self.id = id
 
     def start(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,7 +20,8 @@ class Client:
                 if message:
                     print(f"[*] Sending: {message}")
 
-                    message = "client@" + message
+                    clientName = "client" + self.id 
+                    message = clientName + "@" + message
                     sock.sendall(message.encode('utf-8'))
 
                     data = sock.recv(1024).decode('utf-8')
@@ -32,4 +34,4 @@ class Client:
                 sock.close()
                 break 
 
-Client(port=int(sys.argv[1])).start() 
+Client(port=int(sys.argv[1]), id=sys.argv[2]).start() 
